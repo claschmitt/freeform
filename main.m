@@ -18,7 +18,7 @@ close all;
 % add path for other functions
 
 %load scanfile
-load('Nr14183 ultrahigh I637 Profiler.part10.xyz.asc.mat');
+load('Z:\12_Forschung\02_Projekte\02_Internal\FreeForm\daten\Nr14183 ultrahigh I637 Profiler.part10.xyz.asc.mat');
 xyz = scan.data{1,1}(:,1:3);
 xyz(:,2) = xyz(:,2) - abs(min(scan.boundingBox(:,1)));
 clear scan;
