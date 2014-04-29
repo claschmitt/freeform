@@ -24,7 +24,7 @@ else
 end
 
 kugel = Kugel_3D(Q(randIndexQ,:));
-addpath('Z:\Matlab\ellipsoid_fit');
+% addpath('Z:\Matlab\ellipsoid_fit');
 
 %% Kugel
 G = repmat(kugel.center,r +1,1);
