@@ -21,7 +21,7 @@ function [intPoint, intPoint_normal] = plotSurfaceHom(nurbs,subInterval, figureS
 
 
 %%
-subPosition = linspace(0.0,1.0,subInterval);
+subPosition = linspace(0.0,1.0,subInterval) ;
 
 intPoint = zeros(subInterval, subInterval,3);
 intPoint_row = zeros (subInterval,3);
@@ -36,11 +36,12 @@ for i=1:subInterval
     
     for j=1 : subInterval
 
-        [tmp_intPoint] = surfacePoint(nurbs.numberU -1, nurbs.orderU -1, nurbs.knotsU,nurbs.numberV -1, nurbs.orderV -1, nurbs.knotsV, nurbs.coefs',subPosition(i),subPosition(j));
+%         [tmp_intPoint] = surfacePoint(nurbs,[subPoints(i) subPoints(j)], quality);
+        [tmp_intPoint] = surfacePoint(nurbs,[subPosition(i) subPosition(j)]);
        
         if isempty(tmp_intPoint)
         else
-            intPoint_row(b,:) = tmp_intPoint(1,:);
+            intPoint_row(b,:) = tmp_intPoint;
             b = b+1;
         end
     end
