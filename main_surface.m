@@ -45,7 +45,16 @@ clc;
 % for inm=15 : 20
     inm = 10
 %Definitions
-    nurbs = struct('form','','dimV','','numberU','','dimU','','numberV','','coefs','','orderU','','orderV','','knotsU','','knotsV','');
+    nurbs = struct('form'   ,'B-Spline-Surface',...
+                   'dimV'   ,         3,... %degree of function in U direction
+                   'dimU'   ,         1,... %degree of function in V direction
+                   'numberU',        11,... % number of controle points in u direction
+                   'numberV',        11,... % number of controle points in v direction
+                   'coefs'  ,        '',...
+                   'orderU' ,         2,... %order of function in U direction
+                   'orderV' ,         4,... %order of function in V direction
+                   'knotsU' ,         0,...
+                   'knotsV' ,         0);
     % Degree 
     p = 2; %degree of function in U direction
     q = 2; %degree of function in V direction
@@ -63,7 +72,7 @@ clc;
 % testing approx
 
 % -----
-numPoints4calculation = 1000000;
+numPoints4calculation = 4000000;
 % numPoints4calculation = length(points);
 
 if length(points) > numPoints4calculation
@@ -72,10 +81,10 @@ if length(points) > numPoints4calculation
     r = length(points) -1;
 end
 
-[nurbs, quality] = globalSurfaceApproxHom (r,points,indexK,q,p,n,m,0,0,0,0,false,true, scan.boundingBox);
+[nurbs, quality] = globalSurfaceApproxHom (r,points,indexK,nurbs,false,false, scan.boundingBox);
 
 %nurbs control Points + barycentric center
-nurbs.coefs = nurbs.coefs + repmat(meanPoint,length(nurbs.coefs),1)';
+nurbs.coefs = nurbs.coefs + repmat(meanPoint,length(nurbs.coefs),1);
 
 % -----
 % testing plot
