@@ -10,7 +10,7 @@
 % U = knot vektor of function 1 with degree p
 % P = Control Points of Controle net
 % 
-% cs, 07.09.2012
+% cs, 25.04.2014
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
