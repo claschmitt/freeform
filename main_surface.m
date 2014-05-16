@@ -72,7 +72,7 @@ clc;
 % testing approx
 
 % -----
-numPoints4calculation = 4000000;
+numPoints4calculation = 1000000;
 % numPoints4calculation = length(points);
 
 if length(points) > numPoints4calculation
