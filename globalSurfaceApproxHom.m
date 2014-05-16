@@ -21,7 +21,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-function [nurbs, quality] = globalSurfaceApproxHom (r,points,indexK,nurbs, flagImproveParameter,dataSnooping, boundingbox)
+function [nurbs, quality] = globalSurfaceApproxHom (r,pointsCartesian,indexK,nurbs, flagImproveParameter,dataSnooping, boundingbox)
 
 % %% testing 1
 % clear all;
@@ -39,57 +39,58 @@ sigma_apri_Koord    = 0.004;
 %  Improving observation parameters
 maxIterImproveParameters = 1;
 
-%% generate Parameters for measured points
+%% generate Parameters for measured pointsCartesian
 
-[pointsParameter(:,1), pointsParameter(:,2), quality.indexUsedPoints] = SurfMeshParamsSphere (r,points,boundingbox);
+[pointsParameter(:,1), pointsParameter(:,2), quality.indexUsedPoints] = SurfMeshParamsSphere (r,pointsCartesian,boundingbox);
 r = length(quality.indexUsedPoints) -1;
-points = points(quality.indexUsedPoints,:);
+pointsCartesian = pointsCartesian(quality.indexUsedPoints,:);
 
 %% DataSnooping
 
 for flagDataSnooping = 1 : maxIterDataSnooping
-    %% compute knot vector U
-    r = length(points) -1;
-    if nurbs.knotsU<=0
-        du = (r + 1) / (nurbs.numberU - nurbs.orderU +1);
-        uk_sorted = sort(pointsParameter(:,1));
-        
-        nurbs.knotsU = zeros(nurbs.orderU + nurbs.numberU,1);
-        nurbs.knotsU(nurbs.orderU + nurbs.numberU - nurbs.orderU +1 : nurbs.orderU + nurbs.numberU) = 1;
-        
-        for k=1 : nurbs.numberU-1-nurbs.dimU
-            i = floor(k * du);
-            alpha = k * du - i;
-            %        nurbs.knotsU(nurbs.dimU+k +1) = (1 - alpha) * pointsParameter(:,1)(i-1 +1) + alpha * pointsParameter(:,1)(i +1);
-            nurbs.knotsU(nurbs.dimU+k +1) = (1 - alpha) * uk_sorted(i-1 +1) + alpha * uk_sorted(i +1);
-        end
-    end
-    clear uk_sorted;
-    
-    %% compute knot vector %% compute knot vector U
-    if nurbs.knotsV<=0
-        dv = (r + 1) / (nurbs.numberV - nurbs.orderV +1);
-        vl_sorted = sort(pointsParameter(:,2));
-        
-        nurbs.knotsV = zeros(nurbs.orderV + nurbs.numberV,1);
-        nurbs.knotsV(nurbs.orderV + nurbs.numberV - nurbs.orderV +1 : nurbs.orderV + nurbs.numberV)= 1;
-        
-        for l=1 : nurbs.numberV-1-nurbs.dimV
-            i = floor(l * dv);
-            alpha = l * dv - i;
-            %        nurbs.knotsV(nurbs.dimV+l +1) = (1 - alpha) * pointsParameter(i-1 +1,2) + alpha * pointsParameter(i +1,2);
-            nurbs.knotsV(nurbs.dimV+l +1) = (1 - alpha) * vl_sorted(i-1 +1) + alpha * vl_sorted(i +1);
-        end
-    end
-    
-    clear vl_sorted;
+    nurbs = internalKnots(pointsParameter, nurbs, 'piegl_tiller');
+%     %% compute knot vector U
+%     r = length(pointsCartesian) -1;
+%     if nurbs.knotsU<=0
+%         du = (r + 1) / (nurbs.numberU - nurbs.orderU +1);
+%         uk_sorted = sort(pointsParameter(:,1));
+%         
+%         nurbs.knotsU = zeros(nurbs.orderU + nurbs.numberU,1);
+%         nurbs.knotsU(nurbs.orderU + nurbs.numberU - nurbs.orderU +1 : nurbs.orderU + nurbs.numberU) = 1;
+%         
+%         for k=1 : nurbs.numberU-1-nurbs.dimU
+%             i = floor(k * du);
+%             alpha = k * du - i;
+%             %        nurbs.knotsU(nurbs.dimU+k +1) = (1 - alpha) * pointsParameter(:,1)(i-1 +1) + alpha * pointsParameter(:,1)(i +1);
+%             nurbs.knotsU(nurbs.dimU+k +1) = (1 - alpha) * uk_sorted(i-1 +1) + alpha * uk_sorted(i +1);
+%         end
+%     end
+%     clear uk_sorted;
+%     
+%     %% compute knot vector %% compute knot vector U
+%     if nurbs.knotsV<=0
+%         dv = (r + 1) / (nurbs.numberV - nurbs.orderV +1);
+%         vl_sorted = sort(pointsParameter(:,2));
+%         
+%         nurbs.knotsV = zeros(nurbs.orderV + nurbs.numberV,1);
+%         nurbs.knotsV(nurbs.orderV + nurbs.numberV - nurbs.orderV +1 : nurbs.orderV + nurbs.numberV)= 1;
+%         
+%         for l=1 : nurbs.numberV-1-nurbs.dimV
+%             i = floor(l * dv);
+%             alpha = l * dv - i;
+%             %        nurbs.knotsV(nurbs.dimV+l +1) = (1 - alpha) * pointsParameter(i-1 +1,2) + alpha * pointsParameter(i +1,2);
+%             nurbs.knotsV(nurbs.dimV+l +1) = (1 - alpha) * vl_sorted(i-1 +1) + alpha * vl_sorted(i +1);
+%         end
+%     end
+%     
+%     clear vl_sorted;
     %% multiplication factor Koordinates range vs. Knot range
-    spanCoord = max(points) - min(points);
+    spanCoord = max(pointsCartesian) - min(pointsCartesian);
     spanX     = 1/spanCoord(1);
     spanZ     = 1/spanCoord(3);
     
     %% fill coefficient matrix
-    A = fillAGM (points, pointsParameter, nurbs);
+    A = fillAGM (pointsCartesian, pointsParameter, nurbs);
     %     tic_fill_A = tic;
     %     %loop to improve parameters
     %     for flagReCalc = 1 : maxIterImproveParameters
@@ -108,7 +109,7 @@ for flagDataSnooping = 1 : maxIterDataSnooping
     %                 for iterNewPoint = 1 : 5
     %
     %                     [interpolationPoint, ~] = surfacePoint(nurbs.numberU-1,nurbs.dimU,nurbs.knotsU,nurbs.numberV-1,nurbs.dimV,nurbs.knotsV,nurbs.coefs,pointsParameter(iterAll +1,1),pointsParameter(iterAll +1,2));
-    %                     diffPoint = (interpolationPoint - points(iterAll +1,:));
+    %                     diffPoint = (interpolationPoint - pointsCartesian(iterAll +1,:));
     %
     %                     if abs(diffPoint(1)) > 0.001
     %                         pointsParameter(iterAll +1,1) = pointsParameter(iterAll +1,1) - diffPoint(1)/spanX;
@@ -152,7 +153,7 @@ for flagDataSnooping = 1 : maxIterDataSnooping
     %             Nv = basisFunction(spanV,pointsParameter(iterAll +1,2),nurbs.dimV,nurbs.knotsV);
     %
     %             if nurbs.numberU-1<nurbs.dimU
-    %                 msgbox('number of controle points must be higher','error');
+    %                 msgbox('number of controle pointsCartesian must be higher','error');
     %                 break;
     %             end
     %
@@ -180,10 +181,13 @@ for flagDataSnooping = 1 : maxIterDataSnooping
     
     % filling n Matrix
     %         nKlein = zeros((nurbs.numberU-1 +1) * (nurbs.numberV-1 +1),3);
-    l = zeros(length(points) * 3,1);
-    l(1:3:end) = points(:,1);
-    l(2:3:end) = points(:,2);
-    l(3:3:end) = points(:,3);
+    
+    [numPointsCartesian, dimPoints] = size(pointsCartesian);
+    l = reshape(pointsCartesian',numPointsCartesian * dimPoints,1);
+%     l = zeros(length(pointsCartesian) * 3,1);
+%     l(1:3:end) = pointsCartesian(:,1);
+%     l(2:3:end) = pointsCartesian(:,2);
+%     l(3:3:end) = pointsCartesian(:,3);
     
     nKlein = A' * l;
     
@@ -196,10 +200,10 @@ for flagDataSnooping = 1 : maxIterDataSnooping
     invN = inv(A' * A);
     P = invN * nKlein;
     
-    nurbs.coefs      = zeros(nurbs.numberU * nurbs.numberV,3);
-    nurbs.coefs(:,1) = P(1:3:end,1);
-    nurbs.coefs(:,2) = P(2:3:end,1);
-    nurbs.coefs(:,3) = P(3:3:end,1);    
+    nurbs.coefs      = reshape(P,dimPoints ,nurbs.numberU * nurbs.numberV)';
+%     nurbs.coefs(:,1) = P(1:3:end,1);
+%     nurbs.coefs(:,2) = P(2:3:end,1);
+%     nurbs.coefs(:,3) = P(3:3:end,1);    
     
     ElapsedTimeSolveEquation = toc(tic_solve)
     
@@ -225,10 +229,11 @@ quality.sigma0_apost = sqrt((residuals' * residuals) / ...
     ((r +1) * 3 - (nurbs.numberV-1 +1) * (nurbs.numberU-1 +1) * 3 )...
     );
 
-quality.residuals = zeros(length(points),3);
-quality.residuals(:,1) = residuals(1:3:end,1);
-quality.residuals(:,2) = residuals(2:3:end,1);
-quality.residuals(:,3) = residuals(3:3:end,1);
+quality.residuals = reshape(residuals',dimPoints, numPointsCartesian)';
+% quality.residuals = zeros(length(points),3);
+% quality.residuals(:,1) = residuals(1:3:end,1);
+% quality.residuals(:,2) = residuals(2:3:end,1);
+% quality.residuals(:,3) = residuals(3:3:end,1);
 clear residuals;
 
 quality.sigma_xDach = quality.sigma0_apost .* sqrt(diag(quality.Qxx));
