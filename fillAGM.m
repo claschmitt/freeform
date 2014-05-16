@@ -29,52 +29,119 @@ if nurbs.numberV < nurbs.orderV
 end
 
 %% dimension test reordering points
-if sum(pointsCartesian(:,1)) ~= 0
-    flagX = 1;
-else
-    flagX = 0;
-    pointsCartesian(:,1) = [];
-end
 
-if sum(pointsCartesian(:,2)) ~= 0
-    flagY = 1;
-else
-    flagY = 0;
-    pointsCartesian(:,2) = [];
-end
+[numPointsCartesian, dimPoints] = size(pointsCartesian);
 
-if sum(pointsCartesian(:,3)) ~=0
-    flagZ = 1;
-else
-    flagZ = 0;
-    pointsCartesian(:,3) = [];
-end
+% if sum(pointsCartesian(:,1)) ~= 0
+%     flagX = 1;
+% else
+%     flagX = 0;
+% end
+% 
+% if sum(pointsCartesian(:,2)) ~= 0
+%     flagY = 1;
+% else
+%     flagY = 0;
+% end
+% 
+% if sum(pointsCartesian(:,3)) ~=0
+%     flagZ = 1;
+% else
+%     flagZ = 0;
+% end
+% 
+% % if sum(pointsParameter(:,1)) >= 0
+% %     flagUk = 1;
+% % else
+% %     flagUk = 0;
+% % end
+% %
+% % if sum(pointsParameter(:,2)) >= 0
+% %     flagVl = 1;
+% % else
+% %     flagVl = 0;
+% % end
+% 
+% 
+% dimPoints = flagX + flagY + flagZ;
 
-if sum(pointsParameter(:,1)) >= 0
-    flagUk = 1;
-else
-    flagUk = 0;
-    pointsParameter(:,1) = [];
-end
+% if flagX == 0
+%     pointsCartesian(:,1) = [];
+% elseif flagY == 0
+%     pointsCartesian(:,2) = [];
+% elseif flagZ == 0
+%     pointsCartesian(:,3) = [];
+% end
 
-if sum(pointsParameter(:,2)) >= 0
-    flagVk = 1;
-else
-    flagVk = 0;
-    pointsParameter(:,2) = [];
-end
+% if flagVl == 0
+%      pointsParameter(:,2) = [];
+% elseif flagUk == 0
+%     pointsParameter(:,1) = [];
+% end
 
 
-dimPoints = flagX + flagY + flagZ;
 
 
 %% filling A
-if dimPoints == 2
+
+%   Curves
+if ~isempty(regexpi(nurbs.form, 'curve')) && (dimPoints == 2 || dimPoints == 3)
     
-elseif dimPoints == 3
+    if numPointsCartesian == 1 % for single point calculation
+        A_full   = zeros(numPointsCartesian * dimPoints, nurbs.orderU * dimPoints);
+        A_single = zeros(numPointsCartesian,nurbs.orderU);
+    else % for complet GM model
+        A_full   = zeros(numPointsCartesian * dimPoints, nurbs.numberU *dimPoints);
+        A_single = zeros(numPointsCartesian, nurbs.numberU);
+    end
     
-    [numPointsCartesian, c] = size(pointsCartesian);
+    %   filling A fore one direction
+    for iterPoints=1 : numPointsCartesian
+        
+        % find span at internal knot vector
+        spanU = findSpan(pointsParameter(iterPoints,1),nurbs.knotsU);
+        
+        % calc basis functions
+        Nu = basisFunction(spanU -1,pointsParameter(iterPoints,1),nurbs.orderU -1,nurbs.knotsU);
+        
+        % filling A with basis functions
+        if numPointsCartesian == 1
+            indexA_column_start = int64(1);
+            indexA_column_end   = int64(nurbs.orderU);
+        else
+            indexA_column_start = int64((spanU - nurbs.orderU) +1);
+            indexA_column_end   = int64((spanU - nurbs.orderU) + nurbs.orderU);
+        end
+        A_single(iterPoints,indexA_column_start : indexA_column_end) = Nu;
+        
+    end
     
+    if dimPoints == 2
+        %   filling A with all directions (X,Y,Z)
+        % X
+        A_full(1:2:end, 1:2:end) = A_single;
+        % Y
+        A_full(2:2:end, 2:2:end) = A_single;
+    elseif dimPoints == 3
+        %   filling A with all directions (X,Y,Z)
+        % X
+        A_full(1:3:end, 1:3:end) = A_single;
+        % Y
+        A_full(2:3:end, 2:3:end) = A_single;
+        % Z
+        A_full(3:3:end, 3:3:end) = A_single;
+    else
+        disp('ERROR - Points dimension');
+    end
+    
+    AMatrix = A_full;
+    %     spy(AMatrix,'k');
+    
+    
+    
+%     Surfaces
+elseif ~isempty(regexpi(nurbs.form, 'surface')) && dimPoints == 3
+       
     if numPointsCartesian == 1 % for single point calculation
         A_full   = zeros(numPointsCartesian * dimPoints, nurbs.orderU * nurbs.orderV * dimPoints);
         A_single = zeros(numPointsCartesian,nurbs.orderU * nurbs.orderV);
@@ -96,6 +163,8 @@ elseif dimPoints == 3
         
         tensor_u_v = kron(Nu',Nv);
         
+        %         rationalTensor_u_v = tensor_u_v ./ tensor_u_v;
+        
         for iterBasisU = 1 : nurbs.orderU
             
             % filling A with basis functions
@@ -110,7 +179,7 @@ elseif dimPoints == 3
         end
         
     end
-      
+    
     %   filling A with all directions (X,Y,Z)
     % X
     A_full(1:3:end, 1:3:end) = A_single;
@@ -120,11 +189,11 @@ elseif dimPoints == 3
     A_full(3:3:end, 3:3:end) = A_single;
     
     AMatrix = A_full;
-%     spy(AMatrix,'k');
+    %     spy(AMatrix,'k');
     
     
 else
-    disp('Dimension error');
+    disp('ERROR - Points dimension');
 end
 
 
