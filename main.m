@@ -31,8 +31,8 @@ clear scan;
 % load('Nr14183 ultrahigh I637 Profiler.part10.xyz.asc - Profil1 IncidenceAngle.mat');
 
 % reduce Data
-boundaryMin = -4;
-boundaryMax = +4;
+boundaryMin = -7;
+boundaryMax = +7;
 indexPointsBoundary = find(xyz(:,2)> boundaryMin & xyz(:,2) < boundaryMax);
 xyz  = xyz (indexPointsBoundary,:);
 
@@ -93,77 +93,40 @@ xyzRed(:,3) = (xyz(:,3) - polyval(trendParams,xyz(:,2))) * 1000;
 minY = min(xyz(:,2));
 xyzRed(:,2) = xyz(:,2) - minY;
 
+nurbs.form = 'B-Spline-Curve';
+nurbs.dimU  = 3;
+nurbs.dimV  = 0;
+nurbs.numberU = 20;
+nurbs.numberV = 0;
+nurbs.coefs  = '';
+nurbs.orderU  = 4;
+nurbs.orderV  = 0;
+nurbs.knotsU  = '';
+nurbs.knotsV  = 0;
 %         number of points
-r = length(xyzRed);
-r = r-1;
-%         number of points in orthogonal to r
-s = 0;
-%         degree of B-Spline
-p = 3;
-%         max index of internal knots
-n = 20;
+numPoints = length(xyzRed);
 
-[uk vl] = SurfMeshParamsUnstrukt (r,s,[xyzRed(:,2) zeros(r +1,1) xyzRed(:,3)]);
+%   Approx dimPoints = 2
+% [nurbs,quality] = globalCurveApprox (nurbs,[xyzRed(:,2) xyzRed(:,3)],eye((numPoints)*2));
 
-%         if U<=0
-% compute knot vector U
-du = (r + 1) / (n - p + 1);
+%   Approx dimPoints = 3
+[nurbs,quality] = globalCurveApprox (nurbs,xyzRed,eye((numPoints)*3));
 
-U = zeros((p+1)*2+n-p,1);
-U (p+1+n-p +1:(p+1)*2+n-p)= 1;
-
-for k=1 : n-p
-    i = floor(k * du);
-    alpha = k * du - i;
-    U(p+k +1) = (1 - alpha) * uk(i-1 +1) + alpha * uk(i +1);
-end
-
-
-% [U_VK,P_VK] = globalCurveApprox (r,[xyzRed(:,2) zeros(r +1,1) xyzRed(:,3)],p,n,uk,U,Q_YZ);
-% 
-% %re translate & re trend
-% P_VK(:,1) = P_VK(:,1) + minY;
-% % P_VK(:,3) = P_VK(:,3) + polyval(trendParams,P_VK(:,1));
-% 
-% nurbs_VK.form = 'B-Spline';
-% nurbs_VK.dimU  = p;
-% nurbs_VK.numberU = n +1;
-% nurbs_VK.coefs  = P_VK';
-% nurbs_VK.orderU  = p+1;
-% nurbs_VK.knotsU  = U_VK;
-% 
-% 
-% % Plotting profile
-% figureCurve_VK = figure;
-% plot(xyzRed(:,2) + minY, xyzRed(:,3),'.g')
-% hold on;
-% subPoints_VK = plotCurve(nurbs_VK,1000,figureCurve_VK);
-% hold off;
-% title('B-Spline with VK information')
-% legend('Measured points','B-spline', 'Control net');
-% xlabel('x-coordinate [m]');
-% ylabel('red. z-coordinate [mm]');
-% %   fileNameFigure = ['Y:\Forschung\AusIng\institut_fuer_massivbau\rethen\20130701_Messung 3\Zeitreihen\' fileNameTLS '_Profile'   num2str(counterProfile) '_.fig'];
-% %   saveas(figureCurve,fileNameFigure, 'fig');
-% %   close(figureCurve);
-
-
-[U,P] = globalCurveApprox (r,[xyzRed(:,2) zeros(r +1,1) xyzRed(:,3)],p,n,uk,U,eye((r+1)*2));
 %re translate & re trend
-P(:,1) = P(:,1) + minY;
-% P(:,3) = P(:,3) + polyval(trendParams,P(:,1));
+%   Approx dimPoints = 2
+% nurbs.coefs(:,1) = nurbs.coefs(:,1) + minY;
 
-nurbs.form = 'B-Spline';
-nurbs.dimU  = p;
-nurbs.numberU = n +1;
-nurbs.coefs  = P';
-nurbs.orderU  = p+1;
-nurbs.knotsU  = U;
-
+%   Approx dimPoints = 3
+nurbs.coefs(:,2) = nurbs.coefs(:,2) + minY;
 
 % Plotting profile
 figureCurve = figure;
-plot(xyzRed(:,2) + minY, xyzRed(:,3),'.g')
+%   Approx dimPoints = 2
+% plot(xyzRed(:,2) + minY, xyzRed(:,3),'.g')
+
+%   Approx dimPoints = 3
+plot3(xyzRed(:,1), xyzRed(:,2) + minY, xyzRed(:,3),'.g')
+
 hold on;
 subPoints = plotCurve(nurbs,1000,figureCurve);
 hold off;
